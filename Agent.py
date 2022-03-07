@@ -46,7 +46,9 @@ class Agent(nn.Module):
         self.num_buy = 0
         self.num_sell = 0
         self.num_hold = 0
-        self.profitloss = 0  # 현재 손익
+        self.profitloss = 0  # 수익률
+
+
 
     def reset(self):
         self.balance = self.initial_balance
