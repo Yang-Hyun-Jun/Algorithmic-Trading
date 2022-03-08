@@ -21,7 +21,6 @@ class FinanceData:
 
 if __name__ == "__main__":
     finance = FinanceData()
-
     stock_list = finance.get_stock_list()
 
     for stock_info in stock_list.to_numpy():
