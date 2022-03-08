@@ -8,6 +8,13 @@ class Metrics:
         self.total_return = None
         self.volatility = None
 
+    def reset(self):
+        self.portfolio_values = []
+        self.profitlosses = []
+        self.daily_returns = []
+        self.total_return = None
+        self.volatility = None
+
     """
     The sequence of daily returns 
     """

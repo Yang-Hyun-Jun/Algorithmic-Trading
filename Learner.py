@@ -1,5 +1,7 @@
 import torch
 import utils
+import Visualizer
+
 from tqdm import tqdm
 from Environment import Environment
 from Agent import Agent
@@ -77,15 +79,16 @@ class DQNLearner:
         return states, actions, rewards, next_states, dones
 
 
-    def run(self, num_epoches=100, balance=1000000):
+    def run(self, num_episode=100, balance=1000000):
         self.agent.set_balance(balance)
         self.agent.policy_net.load_state_dict(self.agent.target_net.state_dict())
+        metrics = Metrics()
 
-        for epoch in tqdm(range(num_epoches)):
+        for episode in tqdm(range(num_episode)):
             self.reset()
             # epsilon decaying
             self.agent.epsilon = \
-                self.eps_end + (self.eps_start - self.eps_end)*utils.exp(-(epoch/self.eps_decay))
+                self.eps_end + (self.eps_start - self.eps_end)*utils.exp(-(episode/self.eps_decay))
 
             cum_r = 0
             state = self.environment.observe()
@@ -105,29 +108,40 @@ class DQNLearner:
                 self.itr_cnt += 1
                 cum_r += reward
                 state = next_state
+
+                #metrics 마지 episode 대해서만
+                if episode == range(num_episode)[-1]:
+                    metrics.portfolio_values.append(self.agent.portfolio_value)
+                    metrics.profitlosses.append(self.agent.profitloss)
                 if done:
                     break
 
+            if episode == range(num_episode)[-1]:
+                daily_returns = metrics.get_daily_returns()
+                total_return = metrics.get_total_return()
+                # volatility = metrics.get_volatility()
+                Visualizer.get_close_price_curve(utils.stock_code, utils.start_date, utils.end_date)
+                Visualizer.get_portfolio_value_curve(metrics.portfolio_values)
+                Visualizer.get_daily_return_curve(daily_returns, total_return)
+                # metrics.reset()
 
             if len(self.memory) >= DQNLearner.sampling_only_until:
                 sampled_exps = self.memory.sample(self.batch_size)
                 sampled_exps = self.prepare_training_inputs(sampled_exps)
                 self.agent.update(*sampled_exps)
 
-            if epoch % DQNLearner.target_update_interval == 0:
+            if episode % DQNLearner.target_update_interval == 0:
                 self.agent.target_net.load_state_dict(self.agent.policy_net.state_dict())
 
-            if epoch % DQNLearner.print_every == 0:
+            if episode % DQNLearner.print_every == 0:
                 print("cum_r:{}".format(cum_r))
 
-
-    def save_model(self):
-        pass
+    def save_model(self, path):
+        torch.save(learner.agent.policy_net.state_dict(), path)
 
 #디버깅
 if __name__ == "__main__":
     import DataManager
-
     path = "/Users/macbook/Desktop/OHLCV_data/KOSPI_OHLCV/005930"  # 삼성전자
     training_data = DataManager.load_data(path=path, date_start="20100101", date_end="20170131")
     min_trading_price = max(int(100000 / training_data.iloc[-1]["Close"]), 1) * training_data.iloc[-1]["Close"]
@@ -139,12 +153,12 @@ if __name__ == "__main__":
                          max_trading_price=max_trading_price,
                          batch_size=30, memory_size=50)
 
-    learner.run(num_epoches=100, balance=1000000)
+    metrics = Metrics()
+    # learner.run(num_epoches=100, balance=1000000)
 
     learner.agent.set_balance(1000000)
     learner.reset()
     state = learner.environment.observe()
-    learner.agent.epsilon = learner.epsilon * (1.0 - (float(1) / (3 - 1)))
 
     learner.agent.target_net.load_state_dict(learner.agent.policy_net.state_dict())
     #한 에피소드만 수집
@@ -162,10 +176,13 @@ if __name__ == "__main__":
         learner.memory.push(experience)
         learner.itr_cnt += 1
         state = next_state
-        print(learner.agent.profitloss)
-        print(learner.agent.portfolio_value)
+        metrics.portfolio_values.append( learner.agent.portfolio_value )
+        metrics.profitlosses.append( learner.agent.profitloss )
         if done:
             break
+    print(metrics.get_daily_returns())
+    print(metrics.get_total_return())
+    print(metrics.get_volatility())
 
     sampled_exps = learner.memory.sample(10)
     sampled_exps = learner.prepare_training_inputs(sampled_exps)

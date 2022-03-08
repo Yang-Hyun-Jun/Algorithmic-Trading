@@ -49,7 +49,6 @@ class Agent(nn.Module):
         self.profitloss = 0  # 수익률
 
 
-
     def reset(self):
         self.balance = self.initial_balance
         self.num_stocks = 0
@@ -59,8 +58,10 @@ class Agent(nn.Module):
         self.num_hold = 0
         self.profitloss = 0
 
+
     def set_balance(self, balance):
         self.initial_balance = balance
+
 
     def get_action(self, state):
         confidence = 0
@@ -79,6 +80,7 @@ class Agent(nn.Module):
             confidence = utils.sigmoid(q_value[0][action]) #sigmoid
         return int(action), confidence
 
+
     def validate_action(self, action):
         if action == Agent.ACTION_BUY:
             # 적어도 1주를 살 수 있는지 확인
@@ -91,6 +93,7 @@ class Agent(nn.Module):
                 return False
         return True
 
+
     def decide_trading_unit(self, confidence):
         #confidence에 따라 거래 단위 결정
         added_trading_price = \
@@ -99,6 +102,7 @@ class Agent(nn.Module):
 
         trading_price = self.min_trading_price + added_trading_price
         return max(int(trading_price / self.environment.get_price()), 1)
+
 
     def get_reward(self, p1, p2, action):
         if p1 == None:
@@ -122,6 +126,7 @@ class Agent(nn.Module):
             elif action == 1 or (action==2 and not own):
                 reward = ( ((1-TC)**2)*(p1/p2)-1 )*100
             return reward
+
 
     def step(self, action, confidence):
         if self.validate_action(action) != True:
@@ -174,6 +179,7 @@ class Agent(nn.Module):
             done = 0
 
         return next_state, reward, done
+
 
     def update(self, state, action, reward, next_state, done):
         s, a, r, ns = state, action, reward, next_state
