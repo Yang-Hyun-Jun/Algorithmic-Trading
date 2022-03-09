@@ -6,12 +6,12 @@ import os
 
 from mplfinance.original_flavor import candlestick_ohlc
 
-def get_chart_image(stock_code, date_start, date_end):
-    Base = utils.Base_DIR
-    path = os.path.join(Base, stock_code)
+def get_chart_image(stock_code, date_start=None, date_end=None, save_path=None):
+    data_path = utils.Base_DIR + "/" + stock_code
+    save_path = utils.SAVE_DIR + "/Metrics" + "/Candlestick_train"\
+        if save_path == None else save_path
 
-    chart_data = DataManager.load_data(path, date_start, date_end)
-
+    chart_data = DataManager.load_data(data_path, date_start, date_end)
     fig, ax = plt.subplots(figsize=(12, 8), facecolor="w")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
     ax.get_yaxis().get_major_formatter().set_scientific(False)
@@ -26,16 +26,16 @@ def get_chart_image(stock_code, date_start, date_end):
     candlestick_ohlc(ax, ohlc, colorup="r", colordown="b")
     plt.xticks(np.linspace(0, len(chart_data), 6))
     plt.grid(True, alpha=0.5)
-    fig.savefig(utils.SAVE_DIR + "/Metrics" + "/Candlestick")
+    fig.savefig(save_path)
     # plt.show()
 
-def get_close_price_curve(stock_code, date_start, date_end):
-    Base = utils.Base_DIR
-    path = os.path.join(Base, stock_code)
+def get_close_price_curve(stock_code, date_start=None, date_end=None, save_path=None):
+    data_path = utils.Base_DIR + "/" + stock_code
+    save_path = utils.SAVE_DIR + "/Metrics" + "/Close Price Curve_train"\
+        if save_path == None else save_path
 
-    chart_data = DataManager.load_data(path, date_start, date_end)
+    chart_data = DataManager.load_data(data_path, date_start, date_end)
     close_price = chart_data["Close"]
-
     fig, ax = plt.subplots(figsize=(12, 8), facecolor="w")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
     ax.get_yaxis().get_major_formatter().set_scientific(False)
@@ -47,10 +47,12 @@ def get_close_price_curve(stock_code, date_start, date_end):
     plt.plot(close_price)
     plt.xticks(np.linspace(0, len(close_price), 6))
     plt.grid(True, color="w", alpha=0.5)
-    fig.savefig(utils.SAVE_DIR + "/Metrics" + "/Close Price Curve")
+    fig.savefig(save_path)
     # plt.show()
 
-def get_portfolio_value_curve(portfolio_values):
+def get_portfolio_value_curve(portfolio_values, save_path=None):
+    save_path = utils.SAVE_DIR + "/Metrics" + "/Portfolio Value Curve_train"\
+        if save_path == None else save_path
 
     fig, ax = plt.subplots(figsize=(12, 8), facecolor="w")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
@@ -63,10 +65,12 @@ def get_portfolio_value_curve(portfolio_values):
     plt.plot(portfolio_values)
     plt.xticks(np.linspace(0, len(portfolio_values), 6))
     plt.grid(True, color="w", alpha=0.5)
-    fig.savefig(utils.SAVE_DIR + "/Metrics" + "/Portfolio Value Curve")
+    fig.savefig(save_path)
     # plt.show()
 
-def get_profitloss_curve(profitlosses):
+def get_profitloss_curve(profitlosses, save_path=None):
+    save_path = utils.SAVE_DIR + "/Metrics" + "/Profitloss Curve_train"\
+        if save_path == None else save_path
 
     fig, ax = plt.subplots(figsize=(12, 8), facecolor="w")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
@@ -79,10 +83,13 @@ def get_profitloss_curve(profitlosses):
     plt.plot(profitlosses)
     plt.xticks(np.linspace(0, len(profitlosses), 6))
     plt.grid(True, color="w", alpha=0.5)
-    fig.savefig(utils.SAVE_DIR + "/Metrics" + "/Profitloss Curve")
+    fig.savefig(save_path)
     # plt.show()
 
-def get_daily_return_curve(daily_returns, total_return):
+def get_daily_return_curve(daily_returns, save_path=None):
+    save_path = utils.SAVE_DIR + "/Metrics" + "/Daily Return Curve_train"\
+        if save_path == None else save_path
+
     fig, ax = plt.subplots(figsize=(12, 8), facecolor="w")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
     ax.get_yaxis().get_major_formatter().set_scientific(False)
@@ -92,16 +99,8 @@ def get_daily_return_curve(daily_returns, total_return):
     ax.set_xlabel("Time step")
     plt.title("Daily return")
     plt.plot(daily_returns, label="Daily Return")
-    plt.scatter(-1, total_return, c="red", label="Total Return")
-    plt.xticks(np.arange(len(daily_returns)), np.arange(len(daily_returns))+1)
+    plt.xticks(np.linspace(0, len(daily_returns), 6))
     plt.grid(True, color="w", alpha=0.5)
-    fig.savefig(utils.SAVE_DIR + "/Metrics" + "/Daily Return Curve")
+    fig.savefig(save_path)
     # plt.show()
 
-if __name__ == "__main__":
-
-    stock_code = "005930"
-    date_start = "20140101"
-    date_end = "20170131"
-
-    get_close_price_curve(stock_code, date_start, date_end)

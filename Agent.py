@@ -116,7 +116,7 @@ class Agent(nn.Module):
             #Transaction cost
             if action == 0:
                 TC = Agent.TRADING_CHARGE
-            elif action == 0:
+            elif action == 1:
                 TC = Agent.TRADING_CHARGE + Agent.TRADING_TEX
             else:
                 TC = 0
@@ -177,7 +177,6 @@ class Agent(nn.Module):
             done = 1
         else:
             done = 0
-
         return next_state, reward, done
 
 
@@ -199,62 +198,3 @@ class Agent(nn.Module):
         self.opt.zero_grad()
         self.loss.backward()
         self.opt.step()
-
-
-#디버깅
-if __name__ == "__main__":
-    import torch
-    from Environment import Environment
-    from Agent import Agent
-    from FeatureExtractor import MLPEncoder
-    from FeatureExtractor import MLPDecoder
-    from FeatureExtractor import MLPAutoEncoder
-    import DataManager
-
-    path = "/Users/macbook/Desktop/OHLCV_data/KOSPI_OHLCV/005930"  # 삼성전자
-    training_data = DataManager.load_data(path=path, date_start="20170101", date_end="20170131")
-    min_trading_price = max(int(100000 / training_data.iloc[-1]["Close"]), 1) * training_data.iloc[-1]["Close"]
-    max_trading_price = max(int(1000000 / training_data.iloc[-1]["Close"]), 1) * training_data.iloc[-1]["Close"]
-
-    environment = Environment(chart_data=training_data)
-
-    encoder = MLPEncoder(input_dim=4, num_classes=50)
-    policy_decoder = MLPDecoder(num_classes=50, output_dim=3)
-    target_decoder = MLPDecoder(num_classes=50, output_dim=3)
-    policy_net = MLPAutoEncoder(encoder, policy_decoder)
-    target_net = MLPAutoEncoder(encoder, target_decoder)
-
-    # 에이전트
-    agent = Agent(environment=environment,
-                  policy_net=policy_net, target_net=target_net,
-                  epsilon=0.2, lr=0., discount_factor=0.7,
-                  min_trading_price=min_trading_price,
-                  max_trading_price=max_trading_price)
-
-    agent.reset()
-    agent.environment.reset()
-    agent.set_balance(10000000)
-    state = environment.observe()
-    state = torch.tensor(state).float().view(1, -1)
-
-    #액션 겟
-    action, confidence = agent.get_action(state)
-
-    #한 스텝 진행
-    next_state, reward, done = agent.step(action, confidence)
-    experience = (state,
-                  torch.tensor(action).view(1,-1),
-                  torch.tensor(reward).float().view(1,-1),
-                  torch.tensor(next_state).float().view(1,-1),
-                  torch.tensor(done).view(1,-1))
-    print(experience)
-    agent.update(*experience)
-
-
-
-
-
-
-
-
-

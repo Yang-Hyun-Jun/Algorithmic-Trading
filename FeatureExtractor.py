@@ -26,8 +26,10 @@ class MLPDecoder(nn.Module):
         self.layers = nn.ModuleList()
         self.layers.append(nn.Linear(self.num_classes, 128))
         self.layers.append(nn.BatchNorm1d(128))
+        # self.layers.append(nn.ReLU())
         self.layers.append(nn.Linear(128, 256))
         self.layers.append(nn.BatchNorm1d(256))
+        # self.layers.append(nn.ReLU())
         self.layers.append(nn.Linear(256, self.output_dim))
 
     def forward(self, x):

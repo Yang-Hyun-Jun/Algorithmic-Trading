@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+import utils
 
 class Metrics:
     def __init__(self):
@@ -15,34 +17,40 @@ class Metrics:
         self.total_return = None
         self.volatility = None
 
-    """
-    The sequence of daily returns 
-    """
-    def get_daily_returns(self):
-        assert len(self.portfolio_values) > 1
+    def get_portfolio_values(self, save_path=None):
+        save_path = utils.SAVE_DIR + "/Metrics" + "/Portfolio Value_train"\
+            if save_path == None else save_path
+        df = pd.DataFrame({"Portfolio Value": self.portfolio_values})
+        df.to_csv(save_path)
+
+
+    def get_profitlosses(self, save_path=None):
+        save_path = utils.SAVE_DIR + "/Metrics" + "/Profitloss_train"\
+            if save_path == None else save_path
+        df = pd.DataFrame({"Profitloss": self.profitlosses})
+        df.to_csv(save_path)
+
+
+    def get_daily_returns(self, save_path=None):
+        save_path = utils.SAVE_DIR + "/Metrics" + "/Daily Return_train"\
+            if save_path == None else save_path
+
         for i in range(len(self.portfolio_values)-1):
             t1_step_pv = self.portfolio_values[i]
             t2_step_pv = self.portfolio_values[i+1]
             daily_return = (t2_step_pv - t1_step_pv)/t1_step_pv
             self.daily_returns.append(daily_return)
-        return self.daily_returns
+        df = pd.DataFrame({"Daily Return": self.daily_returns})
+        df.to_csv(save_path)
 
-    """
-    The ratio of the capital growth during testing
-    adn training time
-    """
+
     def get_total_return(self):
-        assert len(self.portfolio_values) > 1
         self.total_return = \
             (self.portfolio_values[-1]-self.portfolio_values[0])/self.portfolio_values[0]
         return self.total_return
 
-    """
-    The volatility of the daily returns that tells us 
-    about the financial risk level of the trading rules
-    """
+
     def get_volatility(self):
         daily_returns = self.daily_returns
         return np.std(daily_returns)
-
 

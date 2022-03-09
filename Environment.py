@@ -5,12 +5,12 @@ class Environment:
         self.chart_data = chart_data
         self.observation = None
         self.idx = - 1
-        self.done = False
+        # self.done = False
 
     def reset(self):
         self.observation = None
         self.idx = - 1
-        self.done = False
+        # self.done = False
 
     def observe(self):
         if len(self.chart_data) > self.idx + 1:

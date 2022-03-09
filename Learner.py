@@ -1,8 +1,9 @@
 import torch
 import utils
 import Visualizer
+import pandas as pd
+import numpy as np
 
-from tqdm import tqdm
 from Environment import Environment
 from Agent import Agent
 from ReplayMemory import ReplayMemory
@@ -13,9 +14,8 @@ from Metrics import Metrics
 
 class DQNLearner:
 
-    sampling_only_until = 64
     target_update_interval = 5
-    print_every = 20
+    print_every = 10
 
     def __init__(self, lr, discount_factor=0.7,
                  eps_start=0.9, eps_end=0.05, eps_decay=500, training_data=None,
@@ -80,24 +80,36 @@ class DQNLearner:
 
 
     def run(self, num_episode=100, balance=1000000):
+        samples = pd.DataFrame({"state":[], "action":[], "confidence":[], "next_state":[], "reward":[], "done":[], "epi":[]})
         self.agent.set_balance(balance)
         self.agent.policy_net.load_state_dict(self.agent.target_net.state_dict())
         metrics = Metrics()
+        steps_done = 0
 
-        for episode in tqdm(range(num_episode)):
+        for episode in range(num_episode):
             self.reset()
-            # epsilon decaying
-            self.agent.epsilon = \
-                self.eps_end + (self.eps_start - self.eps_end)*utils.exp(-(episode/self.eps_decay))
 
             cum_r = 0
             state = self.environment.observe()
             while True:
+                #epsilon decaying
+                self.agent.epsilon = \
+                    self.eps_end + (self.eps_start - self.eps_end) * utils.exp(-steps_done / self.eps_decay)
 
                 state = torch.tensor(state).float().view(1, -1)
                 action, confidence = self.agent.get_action(state)
                 next_state, reward, done = self.agent.step(action, confidence)
 
+                #sample DataFrame 저장
+                samples.loc[steps_done, "state"] = np.array(state[0][-1])
+                samples.loc[steps_done, "action"] = action
+                samples.loc[steps_done, "confidence"] = np.array(confidence)
+                samples.loc[steps_done, "next_state"] = np.array(next_state[-1])
+                samples.loc[steps_done, "reward"] = reward
+                samples.loc[steps_done, "done"] = done
+                samples.loc[steps_done, "epi"] = episode
+
+                steps_done += 1
                 experience = (state,
                               torch.tensor(action).view(1, -1),
                               torch.tensor(reward).view(1, -1),
@@ -109,81 +121,41 @@ class DQNLearner:
                 cum_r += reward
                 state = next_state
 
+                #학습
+                if len(self.memory) >= self.batch_size:
+                    sampled_exps = self.memory.sample(self.batch_size)
+                    sampled_exps = self.prepare_training_inputs(sampled_exps)
+                    self.agent.update(*sampled_exps)
+
                 #metrics 마지 episode 대해서만
                 if episode == range(num_episode)[-1]:
                     metrics.portfolio_values.append(self.agent.portfolio_value)
                     metrics.profitlosses.append(self.agent.profitloss)
+
                 if done:
                     break
 
             if episode == range(num_episode)[-1]:
-                daily_returns = metrics.get_daily_returns()
-                total_return = metrics.get_total_return()
-                # volatility = metrics.get_volatility()
+
+                #metric 계산과 저장
+                metrics.get_daily_returns()
+                metrics.get_profitlosses()
+                metrics.get_portfolio_values()
+
+                #계산한 metric 시각화와 저장
                 Visualizer.get_close_price_curve(utils.stock_code, utils.start_date, utils.end_date)
                 Visualizer.get_portfolio_value_curve(metrics.portfolio_values)
-                Visualizer.get_daily_return_curve(daily_returns, total_return)
-                # metrics.reset()
-
-            if len(self.memory) >= DQNLearner.sampling_only_until:
-                sampled_exps = self.memory.sample(self.batch_size)
-                sampled_exps = self.prepare_training_inputs(sampled_exps)
-                self.agent.update(*sampled_exps)
+                Visualizer.get_profitloss_curve(metrics.profitlosses)
+                Visualizer.get_daily_return_curve(metrics.daily_returns)
 
             if episode % DQNLearner.target_update_interval == 0:
                 self.agent.target_net.load_state_dict(self.agent.policy_net.state_dict())
 
             if episode % DQNLearner.print_every == 0:
-                print("cum_r:{}".format(cum_r))
+                print("episode: {} | cum_r:{}".format(episode, cum_r))
+
+        samples.to_csv(utils.SAVE_DIR + "/samples")
 
     def save_model(self, path):
-        torch.save(learner.agent.policy_net.state_dict(), path)
+        torch.save(self.agent.policy_net.state_dict(), path)
 
-#디버깅
-if __name__ == "__main__":
-    import DataManager
-    path = "/Users/macbook/Desktop/OHLCV_data/KOSPI_OHLCV/005930"  # 삼성전자
-    training_data = DataManager.load_data(path=path, date_start="20100101", date_end="20170131")
-    min_trading_price = max(int(100000 / training_data.iloc[-1]["Close"]), 1) * training_data.iloc[-1]["Close"]
-    max_trading_price = max(int(1000000 / training_data.iloc[-1]["Close"]), 1) * training_data.iloc[-1]["Close"]
-
-    learner = DQNLearner(lr=1e-4, discount_factor=0.7,
-                         training_data=training_data,
-                         min_trading_price=min_trading_price,
-                         max_trading_price=max_trading_price,
-                         batch_size=30, memory_size=50)
-
-    metrics = Metrics()
-    # learner.run(num_epoches=100, balance=1000000)
-
-    learner.agent.set_balance(1000000)
-    learner.reset()
-    state = learner.environment.observe()
-
-    learner.agent.target_net.load_state_dict(learner.agent.policy_net.state_dict())
-    #한 에피소드만 수집
-    while True:
-        state = torch.tensor(state).float().view(1, -1)
-        action, confidence = learner.agent.get_action(state)
-        next_state, reward, done = learner.agent.step(action, confidence)
-
-        experience = (state,
-                      torch.tensor(action).view(1, -1),
-                      torch.tensor(reward).float().view(1, -1),
-                      torch.tensor(next_state).float().view(1, -1),
-                      torch.tensor(done).view(1, -1))
-
-        learner.memory.push(experience)
-        learner.itr_cnt += 1
-        state = next_state
-        metrics.portfolio_values.append( learner.agent.portfolio_value )
-        metrics.profitlosses.append( learner.agent.profitloss )
-        if done:
-            break
-    print(metrics.get_daily_returns())
-    print(metrics.get_total_return())
-    print(metrics.get_volatility())
-
-    sampled_exps = learner.memory.sample(10)
-    sampled_exps = learner.prepare_training_inputs(sampled_exps)
-    # learner.agent.update(*sampled_exps)
