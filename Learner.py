@@ -104,7 +104,7 @@ class DQNLearner:
                 samples.loc[steps_done, "state"] = np.array(state[0][-1])
                 samples.loc[steps_done, "action"] = action
                 samples.loc[steps_done, "confidence"] = np.array(confidence)
-                samples.loc[steps_done, "next_state"] = np.array(next_state[-1])
+                samples.loc[steps_done, "next_state"] = next_state[-1]
                 samples.loc[steps_done, "reward"] = reward
                 samples.loc[steps_done, "done"] = done
                 samples.loc[steps_done, "epi"] = episode
@@ -154,7 +154,9 @@ class DQNLearner:
             if episode % DQNLearner.print_every == 0:
                 print("episode: {} | cum_r:{}".format(episode, cum_r))
 
-        samples.to_csv(utils.SAVE_DIR + "/samples")
+        samples.to_csv(utils.SAVE_DIR + "/Metrics" + "/samples_train")
+        Visualizer.get_action_and_candle(self.environment.chart_data.iloc[:150],
+                                         samples[samples["epi"] == num_episode-1]["action"].iloc[:150])
 
     def save_model(self, path):
         torch.save(self.agent.policy_net.state_dict(), path)

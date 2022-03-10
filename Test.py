@@ -14,7 +14,8 @@ from FeatureExtractor import MLPAutoEncoder
 if __name__ == "__main__":
     test_data_path = utils.Base_DIR + "/0010"
     test_data = DataManager.load_data(test_data_path, date_start="20180101")
-
+    start_date = "20180101"
+    end_date = "20200824"
     #Test Model load
     encoder = MLPEncoder(input_dim=test_data.shape[1], num_classes=50)
     policy_decoder = MLPDecoder(num_classes=50, output_dim=3)
@@ -65,7 +66,7 @@ if __name__ == "__main__":
         samples.loc[steps_done, "state"] = np.array(state[0][-1])
         samples.loc[steps_done, "action"] = action
         samples.loc[steps_done, "confidence"] = np.array(confidence)
-        samples.loc[steps_done, "next_state"] = np.array(next_state[-1])
+        samples.loc[steps_done, "next_state"] = next_state[-1]
         samples.loc[steps_done, "reward"] = reward
         samples.loc[steps_done, "done"] = done
 
@@ -76,9 +77,7 @@ if __name__ == "__main__":
         if done:
             break
 
-    daily_returns = metrics.get_daily_returns()
-    total_return = metrics.get_total_return()
-
+    samples.to_csv(utils.SAVE_DIR + "/Metrics" + "/samples_test")
     Vsave_path1 = utils.SAVE_DIR + "/Metrics" + "/Close Price Curve_test"
     Vsave_path2 = utils.SAVE_DIR + "/Metrics" + "/Portfolio Value Curve_test"
     Vsave_path3 = utils.SAVE_DIR + "/Metrics" + "/Daily Return Curve_test"
@@ -92,11 +91,11 @@ if __name__ == "__main__":
     metrics.get_daily_returns(save_path=Msave_path2)
     metrics.get_profitlosses(save_path=Msave_path3)
 
-    Visualizer.get_close_price_curve(utils.stock_code, utils.start_date, utils.end_date, save_path=Vsave_path1)
+    Visualizer.get_close_price_curve(utils.stock_code, start_date, end_date, save_path=Vsave_path1)
     Visualizer.get_portfolio_value_curve(metrics.portfolio_values, save_path=Vsave_path2)
     Visualizer.get_daily_return_curve(metrics.daily_returns, save_path=Vsave_path3)
     Visualizer.get_profitloss_curve(metrics.profitlosses, save_path=Vsave_path4)
-
+    Visualizer.get_action_and_candle(test_data.iloc[:150], samples["action"].iloc[:150])
     # # metrics.reset()
 
 

@@ -173,7 +173,7 @@ class Agent(nn.Module):
         p2_price = self.environment.get_price()
         reward = self.get_reward(p1=p1_price, p2=p2_price, action=action)
 
-        if len(self.environment.chart_data) <= self.environment.idx + 1:
+        if len(self.environment.chart_data)-1 <= self.environment.idx:
             done = 1
         else:
             done = 0

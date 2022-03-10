@@ -9,7 +9,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--stock_code", nargs="+")
   parser.add_argument("--lr", type=float, default=1e-4)
-  parser.add_argument("--discount_factor", type=float, default=0.8)
+  parser.add_argument("--discount_factor", type=float, default=0.7)
   parser.add_argument("--num_episode", type=int, default=100)
   parser.add_argument("--balance", type=int, default=1000)
   parser.add_argument("--batch_size", type=int, default=30)
@@ -20,14 +20,14 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
 #유틸 저장
-utils.BASE_DIR = "/Users/macbook/Desktop/OHLCV_data/ALL_OHLCV"
+utils.Base_DIR = "/Users/macbook/Desktop/OHLCV_data/ALL_OHLCV"
 utils.SAVE_DIR = "/Users/macbook/Desktop/Save Results"
 utils.stock_code = args.stock_code[0]
 utils.start_date = args.start_date
 utils.end_date = args.end_date
 
 # 학습 데이터 준비
-data_path = os.path.join(utils.BASE_DIR, utils.stock_code)
+data_path = os.path.join(utils.Base_DIR, utils.stock_code)
 training_data = data_manager.load_data(path=data_path, date_start=utils.start_date, date_end=utils.end_date)
 
 # 최소/최대 투자 가격 설정

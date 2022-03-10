@@ -13,7 +13,7 @@ class Environment:
         # self.done = False
 
     def observe(self):
-        if len(self.chart_data) > self.idx + 1:
+        if len(self.chart_data)-1 >= self.idx:
             self.idx += 1
             self.observation = self.chart_data.iloc[self.idx]
             return self.observation.tolist()
@@ -24,4 +24,3 @@ class Environment:
         if self.observation is not None:
             return self.observation[self.PRICE_IDX]
         return None
-
