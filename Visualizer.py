@@ -134,16 +134,16 @@ def get_action_and_candle(chart_data, action_data, exp, save_path=None):
 
     for i in range(len(chart_data)):
         y = (chart_data.iloc[i]["Open"] + chart_data.iloc[i]["Close"])/2
-        if action_data.iloc[i] == 0: #Buy
+        if action_data.iloc[i] == 0:
             plt.scatter(i, y, color="m", s=20, alpha=1.0)
-        elif action_data.iloc[i] == 1: #Sell
+        elif action_data.iloc[i] == 1:
             plt.scatter(i, y, color="c", s=20, alpha=1.0)
-        elif action_data.iloc[i] == 2: #Hold
+        elif action_data.iloc[i] == 2:
             plt.scatter(i, y, color="yellow", s=20, alpha=1.0)
 
-        if exp.iloc[i] == 0: #Greedy action
+        if exp.iloc[i] == 0:
             plt.scatter(i, min(chart_data["Close"]), color="black", s=20, alpha=1.0, marker="x")
-        elif exp.iloc[i] == 1: #exploration
+        elif exp.iloc[i] == 1:
             plt.scatter(i, min(chart_data["Close"]), color="black", s=20, alpha=1.0, marker="o")
 
     xticks = [int(i) for i in np.linspace(0, len(chart_data), 6)]

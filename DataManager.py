@@ -39,11 +39,11 @@ def get_moving_trend(data, w=20, v=5):
         values_down.sort(reverse=True)
 
         if values_down == values:
-            data["Trend"][i] = 0  # Up-Trend
+            data["Trend"].copy()[i] = 0  # Up-Trend
         elif values_up == values:
-            data["Trend"][i] = 1  # Down-Trend
+            data["Trend"].copy()[i] = 1  # Down-Trend
         else:
-            data["Trend"][i] = 2  # Side-Trend
+            data["Trend"].copy()[i] = 2  # Side-Trend
     return data.loc[:, Features_Raw2].iloc[w+v:]
 
 def get_ulbv_vector(data):
@@ -61,7 +61,7 @@ def get_ulbv_vector(data):
 
 
 if __name__ == "__main__":
-    path = "/Users/macbook/Desktop/OHLCV_data/ALL_OHLCV/0010"
+    path = "/Users/macbook/Desktop/OHLCV_data/ALL_OHLCV/005930"
     data = load_data(path=path)
     data = get_moving_trend(data)
     data = get_ulbv_vector(data)
