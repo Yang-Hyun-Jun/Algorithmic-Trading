@@ -113,7 +113,7 @@ def get_daily_return_curve(daily_returns, save_path=None):
     fig.savefig(save_path)
     # plt.show()
 
-def get_action_and_candle(chart_data, action_data, save_path=None):
+def get_action_and_candle(chart_data, action_data, exp, save_path=None):
     chart_data = chart_data
     action_data = action_data
 
@@ -139,10 +139,20 @@ def get_action_and_candle(chart_data, action_data, save_path=None):
         elif action_data.iloc[i] == 1: #Sell
             plt.scatter(i, y, color="c", s=20, alpha=1.0)
         elif action_data.iloc[i] == 2: #Hold
-            plt.scatter(i, y, color="g", s=20, alpha=1.0)
+            plt.scatter(i, y, color="yellow", s=20, alpha=1.0)
+
+        if exp.iloc[i] == 0: #Greedy action
+            plt.scatter(i, min(chart_data["Close"]), color="black", s=20, alpha=1.0, marker="x")
+        elif exp.iloc[i] == 1: #exploration
+            plt.scatter(i, min(chart_data["Close"]), color="black", s=20, alpha=1.0, marker="o")
 
     xticks = [int(i) for i in np.linspace(0, len(chart_data), 6)]
     plt.xticks(xticks)
     plt.grid(True, alpha=0.5)
     plt.savefig(save_path)
     # plt.show()
+
+if __name__ == "__main__":
+    path = utils.Base_DIR + "/0010"
+    data = DataManager.load_data(path)
+    print(min(data["Close"]))

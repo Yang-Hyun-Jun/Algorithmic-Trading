@@ -12,3 +12,5 @@ def sigmoid(x):
 
 def exp(x):
     return np.exp(x)
+
+

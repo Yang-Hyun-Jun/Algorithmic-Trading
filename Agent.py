@@ -65,20 +65,22 @@ class Agent(nn.Module):
 
     def get_action(self, state):
         confidence = 0
-
+        exp = -1
         with torch.no_grad():
             self.policy_net.eval()
             q_value = self.policy_net(state)
             self.policy_net.train()
         prob = np.random.uniform(low=0.0, high=1.0, size=1)
 
-        if prob <= self.epsilon:
+        if prob < self.epsilon:
             action = np.random.choice(range(Agent.NUM_ACTIONS))
             confidence = np.array(0.5)
+            exp = 1
         else:
             action = np.array(q_value.argmax(dim=-1))
-            confidence = utils.sigmoid(q_value[0][action]) #sigmoid
-        return int(action), confidence
+            confidence = utils.sigmoid(q_value[0][action])
+            exp = 0
+        return int(action), confidence, exp
 
 
     def validate_action(self, action):
@@ -123,8 +125,10 @@ class Agent(nn.Module):
 
             if action == 0 or (action==2 and own):
                 reward = ( ((1-TC)**2)*(p2/p1)-1 )*100
+                # reward = p2-p1
             elif action == 1 or (action==2 and not own):
                 reward = ( ((1-TC)**2)*(p1/p2)-1 )*100
+                # reward = p1-p2
             return reward
 
 
@@ -166,7 +170,7 @@ class Agent(nn.Module):
             self.num_hold += 1
 
         self.portfolio_value = self.balance + p1_price * self.num_stocks
-        self.profitloss = (self.portfolio_value / self.initial_balance) - 1
+        self.profitloss = ((self.portfolio_value / self.initial_balance) - 1)*100
 
         #다음 상태로 진행
         next_state = self.environment.observe()
@@ -190,11 +194,13 @@ class Agent(nn.Module):
             q_max = q_value.amax(dim=-1).view(-1, 1)
             target = r + self.discount_factor * q_max * (1-done)
 
-        self.policy_net.eval()
+        # self.policy_net.eval()
         q = self.policy_net(s).gather(1, a)
-        self.policy_net.train()
+        # self.policy_net.train()
         self.loss = self.criteria(q, target)
 
         self.opt.zero_grad()
         self.loss.backward()
+        for param in self.policy_net.parameters():
+            param.grad.data.clamp_(-1, 1)
         self.opt.step()

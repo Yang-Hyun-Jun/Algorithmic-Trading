@@ -79,8 +79,8 @@ class DQNLearner:
         return states, actions, rewards, next_states, dones
 
 
-    def run(self, num_episode=100, balance=1000000):
-        samples = pd.DataFrame({"state":[], "action":[], "confidence":[], "next_state":[], "reward":[], "done":[], "epi":[]})
+    def run(self, num_episode=50, balance=1000):
+        samples = pd.DataFrame({"state":[], "action":[], "confidence":[], "next_state":[], "reward":[], "done":[], "epi":[], "exp":[]})
         self.agent.set_balance(balance)
         self.agent.policy_net.load_state_dict(self.agent.target_net.state_dict())
         metrics = Metrics()
@@ -97,17 +97,18 @@ class DQNLearner:
                     self.eps_end + (self.eps_start - self.eps_end) * utils.exp(-steps_done / self.eps_decay)
 
                 state = torch.tensor(state).float().view(1, -1)
-                action, confidence = self.agent.get_action(state)
+                action, confidence, exp = self.agent.get_action(state)
                 next_state, reward, done = self.agent.step(action, confidence)
 
                 #sample DataFrame 저장
-                samples.loc[steps_done, "state"] = np.array(state[0][-1])
+                samples.loc[steps_done, "state"] = np.array(state[0][3])
                 samples.loc[steps_done, "action"] = action
                 samples.loc[steps_done, "confidence"] = np.array(confidence)
-                samples.loc[steps_done, "next_state"] = next_state[-1]
+                samples.loc[steps_done, "next_state"] = next_state[3]
                 samples.loc[steps_done, "reward"] = reward
                 samples.loc[steps_done, "done"] = done
                 samples.loc[steps_done, "epi"] = episode
+                samples.loc[steps_done, "exp"] = exp
 
                 steps_done += 1
                 experience = (state,
@@ -152,11 +153,14 @@ class DQNLearner:
                 self.agent.target_net.load_state_dict(self.agent.policy_net.state_dict())
 
             if episode % DQNLearner.print_every == 0:
-                print("episode: {} | cum_r:{}".format(episode, cum_r))
+                print("episode: {} | cum_r:{} | epsilon:{}".format(episode, cum_r, self.agent.epsilon))
 
         samples.to_csv(utils.SAVE_DIR + "/Metrics" + "/samples_train")
-        Visualizer.get_action_and_candle(self.environment.chart_data.iloc[:150],
-                                         samples[samples["epi"] == num_episode-1]["action"].iloc[:150])
+        Visualizer.get_action_and_candle(chart_data=self.environment.chart_data.iloc[:200],
+                                         action_data=samples[samples["epi"] == num_episode-1]["action"].iloc[:200],
+                                         exp=samples[samples["epi"] == num_episode-1]["exp"].iloc[:200],
+                                         save_path=utils.SAVE_DIR + "/Metrics" + "/Action and Candle_train")
+
 
     def save_model(self, path):
         torch.save(self.agent.policy_net.state_dict(), path)
